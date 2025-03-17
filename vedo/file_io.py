@@ -40,6 +40,7 @@ __all__ = [
     "screenshot",
     "ask",
     "Video",
+    "write_group"
 ]
 
 
