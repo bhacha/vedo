@@ -107,17 +107,25 @@ def start_k3d(actors2show):
         # https://github.com/K3D-tools/K3D-jupyter
         import k3d
     except ModuleNotFoundError:
-        print("Cannot find k3d, install with:  pip install k3d")
+        print("\nCannot find k3d, install with:  pip install k3d")
         return None
 
     plt = vedo.plotter_instance
     if not plt:
         return None
 
+    already_has_axes = False
     actors2show2 = []
     for ia in actors2show:
         if not ia:
             continue
+
+        try:
+            if ia.name == "Axes":
+                already_has_axes = True
+        except AttributeError:
+            pass
+
         if isinstance(ia, vedo.Assembly):  # unpack assemblies
             actors2show2 += ia.recursive_unpack()
         else:
@@ -138,14 +146,16 @@ def start_k3d(actors2show):
 
     # set k3d camera
     vedo.notebook_plotter.camera_auto_fit = settings.k3d_camera_autofit
-    vedo.notebook_plotter.grid_auto_fit = settings.k3d_grid_autofit
     vedo.notebook_plotter.axes_helper = settings.k3d_axes_helper
+    vedo.notebook_plotter.grid_auto_fit = settings.k3d_grid_autofit
+
+    if already_has_axes:
+        vedo.notebook_plotter.grid_visible = False
+    if settings.k3d_grid_visible is not None: # override if set
+        vedo.notebook_plotter.grid_visible = settings.k3d_grid_visible
 
     if plt.camera:
         vedo.notebook_plotter.camera = utils.vtkCameraToK3D(plt.camera)
-
-    if not plt.axes:
-        vedo.notebook_plotter.grid_visible = False
 
     for ia in actors2show2:
 
@@ -222,10 +232,10 @@ def start_k3d(actors2show):
             arr = ia.pointdata[0]
             kimage = arr.reshape(-1, ky, kx)
 
-            colorTransferFunction = ia.properties.GetRGBTransferFunction()
+            color_transfer_function = ia.properties.GetRGBTransferFunction()
             kcmap = []
             for i in range(128):
-                r, g, b = colorTransferFunction.GetColor(i / 127)
+                r, g, b = color_transfer_function.GetColor(i / 127)
                 kcmap += [i / 127, r, g, b]
 
             kbounds = np.array(ia.dataset.GetBounds()) + np.repeat(
@@ -293,30 +303,40 @@ def start_k3d(actors2show):
                 color_attribute = None
 
             cols = []
-            if ia.mapper.GetColorMode() == 0:
-                # direct RGB colors
+            if ia.mapper.GetColorMode() == 2:  # direct RGB colors
 
                 vcols = ia.dataset.GetPointData().GetScalars()
-                if vcols and vcols.GetNumberOfComponents() == 3:
-                    cols = utils.vtk2numpy(vcols)
-                    cols = 65536 * cols[:, 0] + 256 * cols[:, 1] + cols[:, 2]
-                # print("GetColor",iap.GetColor(), _rgb2int(iap.GetColor()) )
-                # print("colors", len(cols))
-                # print("color_attribute", color_attribute)
-                # if kcmap is not None: print("color_map", len(kcmap))
-                # TODO:
-                # https://k3d-jupyter.org/reference/factory.mesh.html#colormap
 
-                kobj = k3d.mesh(
-                    iacloned.coordinates,
-                    iacloned.cells,
-                    colors=cols,
-                    name=name,
-                    color=_rgb2int(iap.GetColor()),
-                    opacity=iap.GetOpacity(),
-                    side="double",
-                    wireframe=(iap.GetRepresentation() == 1),
-                )
+                if not vcols:
+                    iacloned.map_cells_to_points()
+                    vcols = iacloned.dataset.GetPointData().GetScalars()
+
+                if vcols and vcols.GetNumberOfComponents() in (3, 4):
+                    # vedo.logger.info("found RGB direct colors in Mesh")
+                    cols = utils.vtk2numpy(vcols).astype(np.uint32)
+                    cols = 65536 * cols[:, 0] + 256 * cols[:, 1] + cols[:, 2]
+
+                    kobj = k3d.mesh(
+                        iacloned.coordinates,
+                        iacloned.cells,
+                        colors=cols,
+                        name=name,
+                        opacity=iap.GetOpacity(),
+                        side="double",
+                        wireframe=(iap.GetRepresentation() == 1),
+                    )
+
+                else:
+                    vedo.logger.warning("could not find RGB direct colors in Mesh")
+                    kobj = k3d.mesh(
+                        iacloned.coordinates,
+                        iacloned.cells,
+                        color=_rgb2int(iap.GetColor()),
+                        name=name,
+                        opacity=iap.GetOpacity(),
+                        side="double",
+                        wireframe=(iap.GetRepresentation() == 1),
+                    )
 
             else:
 

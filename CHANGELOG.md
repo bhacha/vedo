@@ -8,6 +8,15 @@ All notable changes to this project will be documented in this file.
 
 ## Changes and Fixes
 - general code cleanup with pylint.
+- add `utils.compute_hessian()`
+- fix issue #1224 for cells coloring in jupyter notebook for k3d
+- add support for STEP files format (needs opencascade lib) #1222
+- fix nan case in scalarbar3d()
+- add `.rename()` method to set any object name.
+- fix bug #1230 in `line.find_index_at_position()` by @natabma
+- Add lazy initialization for normals (#1231) by @CorpsSansOrganes
+
+
 
 
 
@@ -22,6 +31,9 @@ Changes that will break existing code and need active thinking and some work to 
 
 ## New/Revised Examples
 ```
+examples/pyplot/plot_fxy0.py
+
+tests/issues/issue_1230.py
 ```
 
 ## To Do

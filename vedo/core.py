@@ -237,10 +237,13 @@ class DataArrayHelper:
             data = self.obj.dataset.GetFieldData()
         for i in range(data.GetNumberOfArrays()):
             if self.association == 2:
-                name = data.GetAbstractArray(i).GetName()
+                if data.GetAbstractArray(i):
+                    name = data.GetAbstractArray(i).GetName()
+                    data.RemoveArray(name)
             else:
-                name = data.GetArray(i).GetName()
-            data.RemoveArray(name)
+                if data.GetArray(i):
+                    name = data.GetArray(i).GetName()
+                    data.RemoveArray(name)
 
     def select(self, key: Union[int, str]) -> Any:
         """Select one specific array by its name to make it the `active` one."""
@@ -432,6 +435,14 @@ class CommonAlgorithms:
         """
         return DataArrayHelper(cls, 2)
 
+    def rename(cls, newname: str) -> Self:
+        """Rename the object"""
+        try:
+            cls.name = newname
+        except AttributeError:
+            vedo.logger.error(f"Cannot rename object {cls}")
+        return cls
+
     def memory_address(cls) -> int:
         """
         Return a unique memory address integer which may serve as the ID of the
@@ -498,8 +509,8 @@ class CommonAlgorithms:
         """
         try:  # this is very slow for large meshes
             pts = cls.vertices
-            xmin, ymin, zmin = np.min(pts, axis=0)
-            xmax, ymax, zmax = np.max(pts, axis=0)
+            xmin, ymin, zmin = np.nanmin(pts, axis=0)
+            xmax, ymax, zmax = np.nanmax(pts, axis=0)
             return np.array([xmin, xmax, ymin, ymax, zmin, zmax])
         except (AttributeError, ValueError):
             return np.array(cls.dataset.GetBounds())
@@ -1512,7 +1523,8 @@ class CommonAlgorithms:
     def unsigned_distance(
             cls, dims=(25,25,25), bounds=(), max_radius=0, cap_value=0) -> "vedo.Volume":
         """
-        Compute the `Volume` object whose voxels contains the unsigned distance.
+        Compute the `Volume` object whose voxels contains the unsigned distance
+        from the input object.
         """
         dist = vtki.new("UnsignedDistance")
         dist.SetInputData(cls.dataset)
@@ -1520,8 +1532,6 @@ class CommonAlgorithms:
 
         if len(bounds) == 6:
             dist.SetBounds(bounds)
-        # elif bounds == "auto":
-        #     dist.AdjustBoundsOn()
         else:
             dist.SetBounds(cls.bounds())
         if not max_radius:
@@ -1590,16 +1600,24 @@ class CommonAlgorithms:
                 relaxation factor controlling the amount of Laplacian smoothing applied
             strategy : (int)
                 strategy to use for Laplacian smoothing
+
                     - 0: use all points, all point data attributes are smoothed
+
                     - 1: smooth all point attribute data except those on the boundary
+
                     - 2: only point data connected to a boundary point are smoothed
+
             mask : (str, np.ndarray)
                 array to be used as a mask (ignore then the strategy keyword)
             mode : (str)
                 smoothing mode, either "distance2", "distance" or "average"
+
                     - distance**2 weighted (i.e., 1/r**2 interpolation weights)
+
                     - distance weighted (i.e., 1/r) approach;
+
                     - simple average of all connected points in the stencil
+
             exclude : (list)
                 list of arrays to be excluded from smoothing
         """

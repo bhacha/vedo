@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
-import time
 from typing import Union
 
 import numpy as np
@@ -291,8 +290,11 @@ class Slicer3DPlotter(Plotter):
             bu.switch()
             self.cmap_slicer = bu.status()
             for m in self.objects:
-                if "Slice" in m.name:
-                    m.cmap(self.cmap_slicer, vmin=rmin, vmax=rmax)
+                try:
+                    if "Slice" in m.name:
+                        m.cmap(self.cmap_slicer, vmin=rmin, vmax=rmax)
+                except AttributeError:
+                    pass
             self.remove(self.histogram)
             if show_histo:
                 self.histogram = histogram(
@@ -2409,6 +2411,8 @@ class Clock(vedo.Assembly):
             ```
             ![](https://vedo.embl.es/images/feats/clock.png)
         """
+        import time
+
         self.elapsed = 0
         self._start = time.time()
 
@@ -2454,6 +2458,7 @@ class Clock(vedo.Assembly):
 
     def update(self, h=None, m=None, s=None) -> "Clock":
         """Update clock with current or user time."""
+        import time
         parts = self.unpack()
         self.elapsed = time.time() - self._start
 
