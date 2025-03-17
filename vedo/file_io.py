@@ -1460,8 +1460,8 @@ def write_group(objects: List, fileoutput: Union[str, os.PathLike], binary=True)
             if isinstance(objct3, Mesh):
                 for i, f in enumerate(objct3.cells):
                     fs = ""
+                    truecount +=1
                     for fi in f:
-                        truecount +=1
                         if ptxt:
                             fs += f" {truecount}/{truecount}"
                         else:
