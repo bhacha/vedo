@@ -1444,33 +1444,36 @@ def write_group(objects: List, fileoutput: Union[str, os.PathLike], binary=True)
         for objct in objects:
             for p in objct.vertices:
                 outF.write("v {:.8g} {:.8g} {:.8g}\n".format(*p))
+        del objct
 
-        for objct in objects:
-            ptxt = objct.dataset.GetPointData().GetTCoords()
+        for objct2 in objects:
+            ptxt = objct2.dataset.GetPointData().GetTCoords()
             if ptxt:
                 ntxt = utils.vtk2numpy(ptxt)
                 for vt in ntxt:
                     outF.write("vt " + str(vt[0]) + " " + str(vt[1]) + " 0.0\n")
-
+        del objct2
+        
         fs = ""
-        for objct in objects:
-            ptxt = objct.dataset.GetPointData().GetTCoords()
-            if isinstance(objct, Mesh):
-                for i, f in enumerate(objct.cells):
+        for objct3 in objects:
+            ptxt = objct3.dataset.GetPointData().GetTCoords()
+            if isinstance(objct3, Mesh):
+                for i, f in enumerate(objct3.cells):
                     for fi in f:
                         if ptxt:
                             fs += f" {fi+1}/{fi+1}"
                         else:
                             fs += f" {fi+1}"
                     outF.write(f"f{fs}\n")
+        del objct3
         ls = ""
-        for objct in objects:
-                for l in objct.lines:
+        for objct4 in objects:
+                for l in objct4.lines:
                     for li in l:
                         ls += str(li + 1) + " "
                     outF.write(f"l {ls}\n")
                 
-    return objects
+
 
 def save(obj: Any, fileoutput="out.png", binary=True) -> Any:
     """Save an object to file. Same as `write()`."""
