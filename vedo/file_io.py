@@ -1454,14 +1454,14 @@ def write_group(objects: List, fileoutput: Union[str, os.PathLike], binary=True)
                     outF.write("vt " + str(vt[0]) + " " + str(vt[1]) + " 0.0\n")
         del objct2
         
-        truecount = 1
+        truecount = 0
         for objct3 in objects:
             ptxt = objct3.dataset.GetPointData().GetTCoords()
             if isinstance(objct3, Mesh):
                 for i, f in enumerate(objct3.cells):
                     fs = ""
                     for fi in f:
-                        truecount +=fi
+                        truecount +=1
                         if ptxt:
                             fs += f" {truecount}/{truecount}"
                         else:
